@@ -2,8 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -97,6 +96,9 @@ model User {
   googleId     String?      @unique @map("google_id")
   avatarUrl    String?      @map("avatar_url")
   authProvider        AuthProvider @default(EMAIL) @map("auth_provider")
+  isEmailVerified     Boolean      @default(false) @map("is_email_verified")
+  emailVerifyToken    String?      @unique @map("email_verify_token")
+  emailVerifyExpiry   DateTime?    @map("email_verify_expiry")
   passwordResetToken  String?      @unique @map("password_reset_token")
   passwordResetExpiry DateTime?    @map("password_reset_expiry")
   createdAt           DateTime     @default(now()) @map("created_at")

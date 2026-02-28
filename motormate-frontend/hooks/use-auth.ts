@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { usePost } from '@/hooks/use-api';
+import { useGet, usePost } from '@/hooks/use-api';
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -59,13 +59,16 @@ export function useLogin() {
 }
 
 export function useRegister() {
-  const router = useRouter();
-  return usePost<AuthResponse, RegisterCredentials>('/auth/register', {
-    onSuccess(data) {
-      saveToken(data.accessToken);
-      router.push('/dashboard');
-    },
-  });
+  return usePost<{ message: string }, RegisterCredentials>('/auth/register');
+}
+
+/** Calls GET /auth/verify-email?token=<token> — fires automatically when token is present. */
+export function useVerifyEmail(token: string) {
+  return useGet<{ message: string }>(
+    ['verify-email', token],
+    `/auth/verify-email?token=${token}`,
+    { enabled: !!token, retry: false },
+  );
 }
 
 export function useForgotPassword() {

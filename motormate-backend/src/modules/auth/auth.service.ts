@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import { UsersService } from '../users/users.service';
 import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
@@ -37,18 +37,21 @@ export class AuthService {
 
   async validateLocalUser(email: string, password: string) {
     const user = await this.usersService.findByEmail(email);
-    if (!user || !user.password) {
+    if (!user?.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException('Please verify your email address before logging in');
+    }
     const { password: _, ...safeUser } = user;
     return safeUser;
   }
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, frontendUrl: string) {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException('Email already in use');
 
@@ -59,8 +62,37 @@ export class AuthService {
       password: hashed,
       authProvider: 'EMAIL',
     });
-    const { password: _, ...safeUser } = user;
-    return this.buildAuthResponse(safeUser);
+
+    // Generate verification token
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await this.usersService.setEmailVerifyToken(user.id, hashedToken, expiry);
+
+    // Send verification email (non-blocking — failure won't break registration)
+    this.mailService
+      .sendVerificationEmail(
+        user.email,
+        user.name,
+        `${frontendUrl}/verify-email?token=${rawToken}`,
+      )
+      .catch(() => {});
+
+    return {
+      message: 'Registration successful. Please check your email to verify your account.',
+    };
+  }
+
+  async verifyEmail(rawToken: string): Promise<void> {
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const user = await this.usersService.findByEmailVerifyToken(hashedToken);
+
+    if (!user?.emailVerifyExpiry || user.emailVerifyExpiry < new Date()) {
+      throw new BadRequestException('Verification link is invalid or has expired');
+    }
+
+    await this.usersService.markEmailVerified(user.id);
   }
 
   // ─── Google OAuth ─────────────────────────────────────────────────────────
@@ -84,13 +116,14 @@ export class AuthService {
       return safeUser;
     }
 
-    // 3. Brand-new user — create from Google profile
+    // 3. Brand-new user — create from Google profile (auto-verified via Google)
     const created = await this.usersService.create({
       email: profile.email,
       name: profile.name,
       googleId: profile.googleId,
       avatarUrl: profile.avatarUrl,
       authProvider: 'GOOGLE',
+      isEmailVerified: true,
     });
     const { password: _, ...safeUser } = created;
     return safeUser;
@@ -101,7 +134,7 @@ export class AuthService {
   async forgotPassword(email: string, frontendUrl: string): Promise<void> {
     const user = await this.usersService.findByEmail(email);
     // Always return success to prevent email enumeration
-    if (!user || user.authProvider !== 'EMAIL') return;
+    if (!user?.authProvider || user.authProvider !== 'EMAIL') return;
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
@@ -119,7 +152,7 @@ export class AuthService {
     const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
     const user = await this.usersService.findByPasswordResetToken(hashedToken);
 
-    if (!user || !user.passwordResetExpiry || user.passwordResetExpiry < new Date()) {
+    if (!user?.passwordResetExpiry || user.passwordResetExpiry < new Date()) {
       throw new BadRequestException('Reset token is invalid or has expired');
     }
 

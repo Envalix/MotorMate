@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -27,11 +28,24 @@ export class AuthController {
 
   /**
    * POST /api/auth/register
-   * Create a new local (email/password) account and return a JWT.
+   * Create a new local (email/password) account and send a verification email.
+   * Returns a message — no JWT yet (account must be verified first).
    */
   @Post('register')
   register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+    return this.authService.register(dto, frontendUrl);
+  }
+
+  /**
+   * GET /api/auth/verify-email?token=<raw-token>
+   * Validates the token and marks the account as verified.
+   */
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    await this.authService.verifyEmail(token);
+    return { message: 'Email verified successfully. You can now log in.' };
   }
 
   /**
