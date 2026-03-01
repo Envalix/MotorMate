@@ -1,9 +1,9 @@
-import { useQuery, useMutation, UseQueryOptions, UseMutationOptions } from '@tanstack/react-query';
+import { useQuery, useMutation, UseQueryOptions, UseMutationOptions, QueryKey } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { AxiosError } from 'axios';
 
 export function useGet<T>(
-  key: string[],
+  key: QueryKey,
   url: string,
   options?: Omit<UseQueryOptions<T, AxiosError>, 'queryKey' | 'queryFn'>,
 ) {
@@ -37,6 +37,19 @@ export function usePatch<TData, TVariables>(
   return useMutation<TData, AxiosError, TVariables>({
     mutationFn: async (variables) => {
       const { data } = await api.patch<TData>(url, variables);
+      return data;
+    },
+    ...options,
+  });
+}
+
+export function usePut<TData, TVariables>(
+  url: string,
+  options?: UseMutationOptions<TData, AxiosError, TVariables>,
+) {
+  return useMutation<TData, AxiosError, TVariables>({
+    mutationFn: async (variables) => {
+      const { data } = await api.put<TData>(url, variables);
       return data;
     },
     ...options,

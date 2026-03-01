@@ -86,3 +86,7 @@ export function useResetPassword() {
     },
   );
 }
+
+export function useMe() {
+  return useGet<AuthUser>(['me'], '/auth/me');
+}
