@@ -87,7 +87,11 @@ export class BuyRecordsService {
       const cost = buyPrice.plus(totalExpenses);
       netProfit = sellPrice.minus(cost);
       if (cost.gt(0)) {
-        profitPercentage = netProfit.div(cost).times(100).toDecimalPlaces(2).toNumber();
+        profitPercentage = netProfit
+          .div(cost)
+          .times(100)
+          .toDecimalPlaces(2)
+          .toNumber();
       }
     }
 

@@ -45,7 +45,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
     if (!user.isEmailVerified) {
-      throw new UnauthorizedException('Please verify your email address before logging in');
+      throw new UnauthorizedException(
+        'Please verify your email address before logging in',
+      );
     }
     const { password: _, ...safeUser } = user;
     return safeUser;
@@ -65,7 +67,10 @@ export class AuthService {
 
     // Generate verification token
     const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     await this.usersService.setEmailVerifyToken(user.id, hashedToken, expiry);
@@ -80,16 +85,22 @@ export class AuthService {
       .catch(() => {});
 
     return {
-      message: 'Registration successful. Please check your email to verify your account.',
+      message:
+        'Registration successful. Please check your email to verify your account.',
     };
   }
 
   async verifyEmail(rawToken: string): Promise<void> {
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
     const user = await this.usersService.findByEmailVerifyToken(hashedToken);
 
     if (!user?.emailVerifyExpiry || user.emailVerifyExpiry < new Date()) {
-      throw new BadRequestException('Verification link is invalid or has expired');
+      throw new BadRequestException(
+        'Verification link is invalid or has expired',
+      );
     }
 
     await this.usersService.markEmailVerified(user.id);
@@ -137,7 +148,10 @@ export class AuthService {
     if (!user?.authProvider || user.authProvider !== 'EMAIL') return;
 
     const rawToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
     const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await this.usersService.setPasswordResetToken(user.id, hashedToken, expiry);
@@ -149,7 +163,10 @@ export class AuthService {
   }
 
   async resetPassword(rawToken: string, newPassword: string): Promise<void> {
-    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(rawToken)
+      .digest('hex');
     const user = await this.usersService.findByPasswordResetToken(hashedToken);
 
     if (!user?.passwordResetExpiry || user.passwordResetExpiry < new Date()) {

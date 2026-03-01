@@ -3,7 +3,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
-import { useGet, useDelete } from '@/hooks/use-api';
 import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import type { VehicleImage } from '@/types';

@@ -100,6 +100,22 @@ export type ExpenseCategory =
   | 'CLEANING'
   | 'OTHER';
 
+export interface SellRecord {
+  id: string;
+  vehicleId: string;
+  userId: string;
+  buyerName: string | null;
+  buyerNic: string | null;
+  buyerContact: string | null;
+  buyerAddress: string | null;
+  sellingPrice: string; // Decimal serialized as string
+  saleDate: string;
+  paymentMethod: PaymentMethod | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BuyRecord {
   id: string;
   vehicleId: string;

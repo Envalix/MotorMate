@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clearToken, useMe } from '@/hooks/use-auth';
+import { useGetExpiringDocuments } from '@/hooks/use-alerts';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -95,6 +96,8 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useMe();
+  const { data: alertData } = useGetExpiringDocuments();
+  const alertCount = alertData?.totalCount ?? 0;
 
   // Route guard — client-side token check
   useEffect(() => {
@@ -102,7 +105,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     if (!token) {
       router.replace('/login');
     } else {
-      setReady(true);
+      startTransition(() => setReady(true));
     }
   }, [router]);
 
@@ -145,6 +148,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         <nav className="flex flex-1 flex-col gap-1 p-3 pt-4">
           {navItems.map(({ href, label, Icon }) => {
             const active = pathname === href || pathname.startsWith(href + '/');
+            const isAlerts = href === '/alerts';
             return (
               <Link
                 key={href}
@@ -155,7 +159,14 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
                     : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
                 }`}
               >
-                <Icon filled={active} />
+                <span className="relative">
+                  <Icon filled={active} />
+                  {isAlerts && alertCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                      {alertCount > 9 ? '9+' : alertCount}
+                    </span>
+                  )}
+                </span>
                 {label}
               </Link>
             );
@@ -255,6 +266,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-zinc-200 bg-white lg:hidden">
         {navItems.map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
+          const isAlerts = href === '/alerts';
           return (
             <Link
               key={href}
@@ -263,7 +275,14 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
                 active ? 'text-zinc-900' : 'text-zinc-400'
               }`}
             >
-              <Icon filled={active} />
+              <span className="relative">
+                <Icon filled={active} />
+                {isAlerts && alertCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                    {alertCount > 9 ? '9+' : alertCount}
+                  </span>
+                )}
+              </span>
               {label}
             </Link>
           );

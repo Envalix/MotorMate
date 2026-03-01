@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   useUploadDocuments,
   useDeleteDocument,
@@ -9,7 +9,6 @@ import {
   type UploadDocumentPayload,
 } from '@/hooks/use-documents';
 import type { VehicleDocument, DocumentType } from '@/types';
-import { api } from '@/lib/api';
 
 const MAX_FILES = 20;
 const MAX_SIZE_MB = 20;

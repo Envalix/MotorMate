@@ -23,7 +23,8 @@ export class ImagesService {
       cloudinary.uploader
         .upload_stream(
           { folder: 'motormate/vehicles', resource_type: 'image' },
-          (err, result) => (err ? reject(err) : resolve(result!)),
+          (err, result) =>
+            err ? reject(new Error(err.message)) : resolve(result!),
         )
         .end(buffer);
     });

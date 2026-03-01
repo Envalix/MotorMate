@@ -21,7 +21,12 @@ import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 
-const RECEIPT_ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+const RECEIPT_ALLOWED = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'application/pdf',
+];
 const RECEIPT_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 // ─── Vehicle-scoped: POST + GET ───────────────────────────────────────────────

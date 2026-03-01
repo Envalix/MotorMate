@@ -93,7 +93,10 @@ export class AuthController {
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:5173';
     await this.authService.forgotPassword(dto.email, frontendUrl);
-    return { message: 'If that email is registered you will receive a reset link shortly.' };
+    return {
+      message:
+        'If that email is registered you will receive a reset link shortly.',
+    };
   }
 
   /**

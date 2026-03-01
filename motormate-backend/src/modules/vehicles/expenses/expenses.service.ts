@@ -33,7 +33,8 @@ export class ExpensesService {
             public_id: `${Date.now()}_${originalName.replace(/\.[^/.]+$/, '')}`,
             use_filename: false,
           },
-          (err, result) => (err ? reject(err) : resolve(result!)),
+          (err, result) =>
+            err ? reject(new Error(err.message)) : resolve(result!),
         )
         .end(buffer);
     });
@@ -52,7 +53,8 @@ export class ExpensesService {
       where: { id: expenseId },
     });
     if (!expense) throw new NotFoundException('Expense not found');
-    if (expense.userId !== userId) throw new ForbiddenException('Access denied');
+    if (expense.userId !== userId)
+      throw new ForbiddenException('Access denied');
     return expense;
   }
 

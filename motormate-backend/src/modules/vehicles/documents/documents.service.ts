@@ -7,7 +7,6 @@ import {
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import * as archiver from 'archiver';
 import * as https from 'https';
-import * as http from 'http';
 import { Readable } from 'stream';
 import { Response } from 'express';
 import { DocumentType } from '@prisma/client';
@@ -41,7 +40,8 @@ export class DocumentsService {
             public_id: `${Date.now()}_${originalName.replace(/\.[^/.]+$/, '')}`,
             use_filename: false,
           },
-          (err, result) => (err ? reject(err) : resolve(result!)),
+          (err, result) =>
+            err ? reject(new Error(err.message)) : resolve(result!),
         )
         .end(buffer);
     });
@@ -162,7 +162,9 @@ export class DocumentsService {
     });
 
     const date = new Date().toISOString().slice(0, 10);
-    const plate = vehicle.plateNumber?.replace(/[^a-zA-Z0-9]/g, '_') ?? vehicle.id.slice(0, 8);
+    const plate =
+      vehicle.plateNumber?.replace(/[^a-zA-Z0-9]/g, '_') ??
+      vehicle.id.slice(0, 8);
     const fileName = `${plate}_documents_${date}.zip`;
 
     res.setHeader('Content-Type', 'application/zip');
@@ -172,16 +174,22 @@ export class DocumentsService {
     archive.pipe(res);
 
     for (const doc of docs) {
+      // Generate a fresh signed URL from the trusted publicId — never fetch
+      // doc.url directly, as a poisoned DB row could point to internal endpoints.
+      const expiresAt = Math.floor(Date.now() / 1000) + 300;
+      const signedUrl = cloudinary.url(doc.publicId, {
+        sign_url: true,
+        type: 'upload',
+        resource_type: 'auto',
+        expires_at: expiresAt,
+      });
+
       await new Promise<void>((resolve, reject) => {
-        const urlObj = new URL(doc.url);
-        const client = urlObj.protocol === 'https:' ? https : http;
-        client
-          .get(doc.url, (res) => {
-            archive.append(res as unknown as Readable, {
-              name: doc.name,
-            });
-            res.on('end', resolve);
-            res.on('error', reject);
+        https
+          .get(signedUrl, (stream) => {
+            archive.append(stream as unknown as Readable, { name: doc.name });
+            stream.on('end', resolve);
+            stream.on('error', reject);
           })
           .on('error', reject);
       });

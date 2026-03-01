@@ -21,7 +21,12 @@ import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 import { DocumentsService } from './documents.service';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 
-const ALLOWED_MIME = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+const ALLOWED_MIME = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/jpg',
+];
 const MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
 
 @UseGuards(JwtAuthGuard)
@@ -59,7 +64,12 @@ export class DocumentsController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body() dto: UploadDocumentDto,
   ) {
-    return this.documentsService.uploadDocuments(vehicleId, user.id, files, dto);
+    return this.documentsService.uploadDocuments(
+      vehicleId,
+      user.id,
+      files,
+      dto,
+    );
   }
 
   // GET /vehicles/:vehicleId/documents/download-all

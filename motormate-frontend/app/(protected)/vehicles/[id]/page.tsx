@@ -8,6 +8,7 @@ import { PhotoManager } from '@/components/vehicles/photo-manager';
 import { DocumentManager } from '@/components/vehicles/document-manager';
 import { BuyRecordPanel } from '@/components/vehicles/buy-record-panel';
 import { ExpenseManager } from '@/components/vehicles/expense-manager';
+import { SellRecordPanel } from '@/components/vehicles/sell-record-panel';
 import type { Vehicle, VehicleStatus } from '@/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -355,9 +356,7 @@ export default function VehicleDetailPage({ params }: { params: Promise<{ id: st
       )}
 
       {activeTab === 'Sell Record' && (
-        <div className="rounded-xl border border-dashed border-zinc-200 p-8 text-center">
-          <p className="text-sm text-zinc-500">Sell Record coming soon.</p>
-        </div>
+        <SellRecordPanel vehicleId={id} />
       )}
     </div>
   );

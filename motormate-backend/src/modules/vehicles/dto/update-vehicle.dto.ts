@@ -9,7 +9,13 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { FuelType, Transmission, VehicleCondition, VehicleStatus, VehicleType } from '@prisma/client';
+import {
+  FuelType,
+  Transmission,
+  VehicleCondition,
+  VehicleStatus,
+  VehicleType,
+} from '@prisma/client';
 
 export class UpdateVehicleDto {
   @IsOptional()
