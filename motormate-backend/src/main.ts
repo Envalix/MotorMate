@@ -5,8 +5,9 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const isDev = process.env.NODE_ENV !== 'production';
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: isDev ? true : process.env.FRONTEND_URL,
     credentials: true,
   });
 
@@ -24,4 +25,4 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`Application running on: http://localhost:${port}/api`);
 }
-bootstrap();
+void bootstrap();
