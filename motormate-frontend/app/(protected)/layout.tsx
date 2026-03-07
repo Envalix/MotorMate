@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { useMe } from '@/hooks/use-auth';
 import { useGetExpiringDocuments } from '@/hooks/use-alerts';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const headerDropdownRef = useRef<HTMLDivElement>(null);
 
   const { status } = useSession();
   const { data: user } = useMe();
@@ -110,7 +112,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const inSidebar = dropdownRef.current?.contains(e.target as Node);
+      const inHeader = headerDropdownRef.current?.contains(e.target as Node);
+      if (!inSidebar && !inHeader) {
         setDropdownOpen(false);
       }
     }
@@ -124,21 +128,21 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
 
   if (status === 'loading' || status === 'unauthenticated') {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-50">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-800" />
+      <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-800 dark:border-zinc-700 dark:border-t-zinc-300" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-zinc-50 lg:flex-row">
+    <div className="flex h-dvh flex-col bg-zinc-50 dark:bg-zinc-950 lg:flex-row">
 
       {/* ── Sidebar (desktop ≥ lg) ── */}
-      <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:border-r lg:border-zinc-200 lg:bg-white">
+      <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:border-r lg:border-zinc-200 lg:bg-white dark:lg:border-zinc-800 dark:lg:bg-zinc-900">
         {/* Logo */}
-        <div className="flex h-14 items-center gap-2.5 border-b border-zinc-100 px-5">
+        <div className="flex h-14 items-center gap-2.5 border-b border-zinc-100 px-5 dark:border-zinc-800">
           <span className="text-lg">🚗</span>
-          <span className="text-base font-semibold tracking-tight text-zinc-900">MotorMate</span>
+          <span className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">MotorMate</span>
         </div>
 
         {/* Nav */}
@@ -152,8 +156,8 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
                 href={href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-zinc-100 text-zinc-900'
-                    : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800'
+                    ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100'
+                    : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
                 }`}
               >
                 <span className="relative">
@@ -171,30 +175,30 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* User area */}
-        <div className="border-t border-zinc-100 p-3">
+        <div className="border-t border-zinc-100 p-3 dark:border-zinc-800">
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen((v) => !v)}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-zinc-50"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800"
             >
               {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
               ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
                   <Initials name={user?.name ?? '?'} />
                 </div>
               )}
               <div className="flex-1 overflow-hidden text-left">
-                <p className="truncate text-xs font-medium text-zinc-900">{user?.name ?? '…'}</p>
+                <p className="truncate text-xs font-medium text-zinc-900 dark:text-zinc-100">{user?.name ?? '…'}</p>
                 <p className="truncate text-xs text-zinc-400">{user?.email ?? ''}</p>
               </div>
             </button>
 
             {dropdownOpen && (
-              <div className="absolute bottom-full left-0 mb-1 w-full rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
+              <div className="absolute bottom-full left-0 mb-1 w-full rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                 >
                   <LogoutIcon />
                   Sign out
@@ -209,47 +213,52 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       <div className="flex flex-1 flex-col overflow-hidden">
 
         {/* ── Top header (mobile full / desktop slim) ── */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 lg:px-6">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 dark:border-zinc-800 dark:bg-zinc-900 lg:px-6">
           {/* Logo — visible on mobile, hidden on desktop (shown in sidebar) */}
           <div className="flex items-center gap-2 lg:hidden">
             <span className="text-lg">🚗</span>
-            <span className="text-base font-semibold tracking-tight text-zinc-900">MotorMate</span>
+            <span className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">MotorMate</span>
           </div>
 
           {/* Desktop: page title area — just a spacer */}
           <div className="hidden lg:block" />
 
-          {/* User avatar + dropdown */}
-          <div className="relative" ref={undefined}>
-            <button
-              onClick={() => setDropdownOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-zinc-100"
-              aria-label="Account menu"
-            >
-              {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white">
-                  <Initials name={user?.name ?? '?'} />
+          {/* Right side: theme toggle + avatar */}
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+
+            {/* User avatar + dropdown */}
+            <div className="relative" ref={headerDropdownRef}>
+              <button
+                onClick={() => setDropdownOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                aria-label="Account menu"
+              >
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
+                    <Initials name={user?.name ?? '?'} />
+                  </div>
+                )}
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 lg:hidden">
+                  <div className="border-b border-zinc-100 px-3 py-2 dark:border-zinc-800">
+                    <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">{user?.name}</p>
+                    <p className="text-xs text-zinc-400">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                  >
+                    <LogoutIcon />
+                    Sign out
+                  </button>
                 </div>
               )}
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg lg:hidden" ref={dropdownRef}>
-                <div className="border-b border-zinc-100 px-3 py-2">
-                  <p className="text-xs font-medium text-zinc-900">{user?.name}</p>
-                  <p className="text-xs text-zinc-400">{user?.email}</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  <LogoutIcon />
-                  Sign out
-                </button>
-              </div>
-            )}
+            </div>
           </div>
         </header>
 
@@ -260,7 +269,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* ── Bottom navigation (mobile < lg) ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-zinc-200 bg-white lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
         {navItems.map(({ href, label, Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/');
           const isAlerts = href === '/alerts';
@@ -269,7 +278,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
               key={href}
               href={href}
               className={`flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium transition-colors ${
-                active ? 'text-zinc-900' : 'text-zinc-400'
+                active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400 dark:text-zinc-500'
               }`}
             >
               <span className="relative">
