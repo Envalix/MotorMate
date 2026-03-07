@@ -28,7 +28,7 @@ export interface RegisterCredentials {
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 
 export function initiateGoogleLogin() {
-  signIn('google');
+  signIn('google', { callbackUrl: '/dashboard' });
 }
 
 // ─── Auth mutations ───────────────────────────────────────────────────────────
