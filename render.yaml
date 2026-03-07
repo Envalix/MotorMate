@@ -1,0 +1,123 @@
+# Render.com Infrastructure as Code
+# Docs: https://render.com/docs/blueprint-spec
+#
+# This defines TWO backend services:
+#   1. motormate-backend-staging  → deployed from `develop` branch
+#   2. motormate-backend-prod     → deployed from `main` branch
+#
+# After creating these services on Render:
+#   1. Grab each service's Deploy Hook URL (Dashboard → Settings → Deploy Hooks)
+#   2. Add them as GitHub Secrets:
+#      RENDER_STAGING_DEPLOY_HOOK_URL
+#      RENDER_PRODUCTION_DEPLOY_HOOK_URL
+
+services:
+  # ─── Staging (develop branch) ─────────────────────────────────────────────
+  - type: web
+    name: motormate-backend-staging
+    runtime: node
+    region: oregon
+    plan: free
+    branch: develop
+    rootDir: motormate-backend
+    buildCommand: npm ci && npm run build && npx prisma generate
+    startCommand: npx prisma migrate deploy && node dist/main
+    healthCheckPath: /api
+    envVars:
+      - key: NODE_ENV
+        value: staging
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        value: https://motormate-staging.vercel.app
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://motormate-backend-staging.onrender.com/api/auth/google/callback
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_VEHICLE_IMAGES_PRESET
+        sync: false
+      - key: CLOUDINARY_VEHICLE_DOCS_PRESET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: MotorMate Staging
+
+  # ─── Production (main branch) ─────────────────────────────────────────────
+  - type: web
+    name: motormate-backend-prod
+    runtime: node
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: motormate-backend
+    buildCommand: npm ci && npm run build && npx prisma generate
+    startCommand: npx prisma migrate deploy && node dist/main
+    healthCheckPath: /api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        value: https://motormate.vercel.app
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://motormate-backend-prod.onrender.com/api/auth/google/callback
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_VEHICLE_IMAGES_PRESET
+        sync: false
+      - key: CLOUDINARY_VEHICLE_DOCS_PRESET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: MotorMate

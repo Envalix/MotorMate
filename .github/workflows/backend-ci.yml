@@ -1,0 +1,72 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "motormate-backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "motormate-backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+defaults:
+  run:
+    working-directory: motormate-backend
+
+jobs:
+  ci:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: motormate-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  # ─── Deploy to Render staging (develop branch) ───────────────────────────────
+  deploy-staging:
+    name: Deploy → Staging (Render)
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+
+    steps:
+      - name: Trigger Render staging deploy
+        run: |
+          curl -s --fail -X POST "${{ secrets.RENDER_STAGING_DEPLOY_HOOK_URL }}" \
+            -H "Content-Type: application/json"
+          echo "Staging deploy triggered successfully"
+
+  # ─── Deploy to Render production (main branch) ───────────────────────────────
+  deploy-production:
+    name: Deploy → Production (Render)
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+
+    steps:
+      - name: Trigger Render production deploy
+        run: |
+          curl -s --fail -X POST "${{ secrets.RENDER_PRODUCTION_DEPLOY_HOOK_URL }}" \
+            -H "Content-Type: application/json"
+          echo "Production deploy triggered successfully"
