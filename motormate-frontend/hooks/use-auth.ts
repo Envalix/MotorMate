@@ -1,20 +1,17 @@
 'use client';
 
+import { signIn, signOut, useSession } from 'next-auth/react';
+import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useGet, usePost } from '@/hooks/use-api';
 
-// ─── Shared types ────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
   avatarUrl: string | null;
-}
-
-export interface AuthResponse {
-  accessToken: string;
-  user: AuthUser;
 }
 
 export interface LoginCredentials {
@@ -28,31 +25,32 @@ export interface RegisterCredentials {
   password: string;
 }
 
-// ─── Token helpers ────────────────────────────────────────────────────────────
-
-export function saveToken(token: string) {
-  localStorage.setItem('access_token', token);
-}
-
-export function clearToken() {
-  localStorage.removeItem('access_token');
-}
-
 // ─── Google OAuth ─────────────────────────────────────────────────────────────
 
-/** Redirect the browser to the Google OAuth consent screen. */
 export function initiateGoogleLogin() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api';
-  window.location.href = `${apiUrl}/auth/google`;
+  signIn('google');
 }
 
-// ─── Mutations ────────────────────────────────────────────────────────────────
+// ─── Auth mutations ───────────────────────────────────────────────────────────
 
 export function useLogin() {
   const router = useRouter();
-  return usePost<AuthResponse, LoginCredentials>('/auth/login', {
-    onSuccess(data) {
-      saveToken(data.accessToken);
+
+  return useMutation({
+    mutationFn: async (credentials: LoginCredentials) => {
+      const result = await signIn('credentials', {
+        email: credentials.email,
+        password: credentials.password,
+        redirect: false,
+      });
+      if (result?.error) {
+        if (result.error === 'email_not_verified') {
+          throw new Error('Please verify your email address before logging in');
+        }
+        throw new Error('Invalid email or password');
+      }
+    },
+    onSuccess() {
       router.push('/dashboard');
     },
   });
@@ -62,7 +60,6 @@ export function useRegister() {
   return usePost<{ message: string }, RegisterCredentials>('/auth/register');
 }
 
-/** Calls GET /auth/verify-email?token=<token> — fires automatically when token is present. */
 export function useVerifyEmail(token: string) {
   return useGet<{ message: string }>(
     ['verify-email', token],
@@ -87,6 +84,29 @@ export function useResetPassword() {
   );
 }
 
+// ─── Current user ─────────────────────────────────────────────────────────────
+
 export function useMe() {
-  return useGet<AuthUser>(['me'], '/auth/me');
+  const { data: session } = useSession();
+
+  return {
+    data: session?.user
+      ? ({
+          id: session.user.id,
+          email: session.user.email ?? '',
+          name: session.user.name ?? '',
+          avatarUrl: session.user.image ?? null,
+        } satisfies AuthUser)
+      : undefined,
+  };
+}
+
+// ─── Legacy helpers (kept for remaining references) ───────────────────────────
+
+/** @deprecated session is managed by next-auth cookies */
+export function saveToken(_token: string) {}
+
+/** @deprecated Use signOut() directly */
+export function clearToken() {
+  signOut({ callbackUrl: '/login' });
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import { startTransition, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { clearToken, useMe } from '@/hooks/use-auth';
+import { useSession, signOut } from 'next-auth/react';
+import { useMe } from '@/hooks/use-auth';
 import { useGetExpiringDocuments } from '@/hooks/use-alerts';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -91,23 +92,20 @@ function Initials({ name }: { name: string }) {
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const { status } = useSession();
   const { data: user } = useMe();
   const { data: alertData } = useGetExpiringDocuments();
   const alertCount = alertData?.totalCount ?? 0;
 
-  // Route guard — client-side token check
+  // Route guard — session-based
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
+    if (status === 'unauthenticated') {
       router.replace('/login');
-    } else {
-      startTransition(() => setReady(true));
     }
-  }, [router]);
+  }, [status, router]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -121,11 +119,10 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }, []);
 
   function handleLogout() {
-    clearToken();
-    router.replace('/login');
+    signOut({ callbackUrl: '/login' });
   }
 
-  if (!ready) {
+  if (status === 'loading' || status === 'unauthenticated') {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-50">
         <span className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-800" />

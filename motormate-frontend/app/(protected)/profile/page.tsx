@@ -1,15 +1,15 @@
 'use client';
 
-import { useMe, clearToken } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { useMe } from '@/hooks/use-auth';
+import { useSession, signOut } from 'next-auth/react';
 
 export default function ProfilePage() {
-  const { data: user, isLoading } = useMe();
-  const router = useRouter();
+  const { data: user } = useMe();
+  const { status } = useSession();
+  const isLoading = status === 'loading';
 
   function handleLogout() {
-    clearToken();
-    router.replace('/login');
+    signOut({ callbackUrl: '/login' });
   }
 
   return (

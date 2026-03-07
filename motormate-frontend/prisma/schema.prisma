@@ -1,0 +1,269 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+  OTHER
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+  CVT
+  OTHER
+}
+
+enum VehicleStatus {
+  IN_STOCK
+  RESERVED
+  SOLD
+}
+
+enum DocumentType {
+  BLUE_BOOK
+  CMT
+  REVENUE_LICENCE
+  INSURANCE
+  SIGNED_LETTER
+  NIC
+  OTHER
+}
+
+enum ExpenseCategory {
+  TIRES
+  PAINT
+  ENGINE
+  ELECTRICAL
+  INTERIOR
+  REGISTRATION
+  TRANSPORT
+  CLEANING
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  FINANCING
+  OTHER
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}
+
+enum VehicleCondition {
+  NEW
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+}
+
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+  TRUCK
+  VAN
+  SUV
+  BUS
+  OTHER
+}
+
+// ─────────────────────────────────────────────
+// Money convention
+//
+// All monetary fields use @db.Decimal(12, 2):
+//   precision  12  (total significant digits)
+//   scale       2  (decimal places — cent accuracy)
+//   max value      9_999_999_999.99
+//
+// Application rules:
+//   · Never use JS `number` for money arithmetic (float errors).
+//   · Use Decimal from decimal.js via src/common/utils/money.util.ts.
+//   · API inputs arrive as strings; parse with toMoney() before use.
+//   · Prisma returns Decimal instances; serialize with formatMoney().
+//
+// See: src/common/constants/money.ts
+//      src/common/utils/money.util.ts
+// ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  name         String
+  password     String?
+  googleId     String?      @unique @map("google_id")
+  avatarUrl    String?      @map("avatar_url")
+  authProvider        AuthProvider @default(EMAIL) @map("auth_provider")
+  isEmailVerified     Boolean      @default(false) @map("is_email_verified")
+  emailVerifyToken    String?      @unique @map("email_verify_token")
+  emailVerifyExpiry   DateTime?    @map("email_verify_expiry")
+  passwordResetToken  String?      @unique @map("password_reset_token")
+  passwordResetExpiry DateTime?    @map("password_reset_expiry")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+
+  vehicles    Vehicle[]
+  buyRecords  BuyRecord[]
+  sellRecords SellRecord[]
+  expenses    Expense[]
+
+  @@map("users")
+}
+
+model Vehicle {
+  id            String        @id @default(uuid())
+  userId        String        @map("user_id")
+  make          String
+  model         String
+  year          Int
+  vehicleType   VehicleType?      @map("vehicle_type")
+  vin           String?           @unique
+  plateNumber   String?           @unique @map("plate_number")
+  color         String?
+  engineCC      Int?              @map("engine_cc")
+  mileage       Int?
+  fuelType      FuelType?         @map("fuel_type")
+  transmission  Transmission?
+  condition     VehicleCondition?
+  status        VehicleStatus     @default(IN_STOCK)
+  purchasePrice Decimal           @map("purchase_price") @db.Decimal(12, 2)
+  sellingPrice  Decimal?          @map("selling_price") @db.Decimal(12, 2)
+  notes         String?           @db.Text
+  deletedAt     DateTime?         @map("deleted_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images    VehicleImage[]
+  documents VehicleDocument[]
+  buyRecord BuyRecord?
+  sellRecord SellRecord?
+  expenses  Expense[]
+
+  @@index([userId])                // list all vehicles for a user
+  @@index([userId, status])        // filter vehicles by owner + status (e.g. IN_STOCK)
+  @@map("vehicles")
+}
+
+model VehicleImage {
+  id        String   @id @default(uuid())
+  vehicleId String   @map("vehicle_id")
+  url       String
+  publicId  String   @map("public_id")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])             // list all images for a vehicle
+  @@map("vehicle_images")
+}
+
+model VehicleDocument {
+  id         String       @id @default(uuid())
+  vehicleId  String       @map("vehicle_id")
+  name       String
+  url        String
+  publicId   String       @map("public_id")
+  docType    DocumentType @default(OTHER) @map("doc_type")
+  isLocked   Boolean      @default(false) @map("is_locked")
+  expiryDate DateTime?    @map("expiry_date")
+  createdAt  DateTime     @default(now()) @map("created_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])             // list all documents for a vehicle
+  @@map("vehicle_documents")
+}
+
+model BuyRecord {
+  id            String         @id @default(uuid())
+  vehicleId     String         @unique @map("vehicle_id")
+  userId        String         @map("user_id")
+  sellerName    String?        @map("seller_name")
+  sellerNic     String?        @map("seller_nic")
+  sellerContact String?        @map("seller_contact")
+  sellerAddress String?        @db.Text @map("seller_address")
+  purchasePrice Decimal        @map("purchase_price") @db.Decimal(12, 2)
+  purchaseDate  DateTime       @map("purchase_date")
+  paymentMethod PaymentMethod? @map("payment_method")
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // vehicleId already indexed by @unique above
+  @@index([userId])                // list all buy records for a user
+  @@map("buy_records")
+}
+
+model SellRecord {
+  id            String         @id @default(uuid())
+  vehicleId     String         @unique @map("vehicle_id")
+  userId        String         @map("user_id")
+  buyerName     String?        @map("buyer_name")
+  buyerNic      String?        @map("buyer_nic")
+  buyerContact  String?        @map("buyer_contact")
+  buyerAddress  String?        @db.Text @map("buyer_address")
+  sellingPrice  Decimal        @map("selling_price") @db.Decimal(12, 2)
+  saleDate      DateTime       @map("sale_date")
+  paymentMethod PaymentMethod? @map("payment_method")
+  notes         String?        @db.Text
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // vehicleId already indexed by @unique above
+  @@index([userId])                // list all sell records for a user
+  @@map("sell_records")
+}
+
+model Expense {
+  id               String          @id @default(uuid())
+  vehicleId        String          @map("vehicle_id")
+  userId           String          @map("user_id")
+  category         ExpenseCategory @default(OTHER)
+  description      String
+  amount           Decimal         @db.Decimal(12, 2)
+  date             DateTime
+  vendor           String?
+  receiptUrl       String?         @map("receipt_url")
+  receiptPublicId  String?         @map("receipt_public_id")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])             // list all expenses for a vehicle
+  @@index([userId])                // list all expenses for a user
+  @@index([vehicleId, date])       // expenses for a vehicle filtered/sorted by date
+  @@map("expenses")
+}
