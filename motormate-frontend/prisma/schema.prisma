@@ -140,8 +140,8 @@ model Vehicle {
   model         String
   year          Int
   vehicleType   VehicleType?      @map("vehicle_type")
-  vin           String?           @unique
-  plateNumber   String?           @unique @map("plate_number")
+  vin           String?
+  plateNumber   String?           @map("plate_number")
   color         String?
   engineCC      Int?              @map("engine_cc")
   mileage       Int?
@@ -165,6 +165,8 @@ model Vehicle {
 
   @@index([userId])                // list all vehicles for a user
   @@index([userId, status])        // filter vehicles by owner + status (e.g. IN_STOCK)
+  @@unique([userId, vin])          // same user can't add same VIN twice
+  @@unique([userId, plateNumber])  // same user can't add same plate twice
   @@map("vehicles")
 }
 

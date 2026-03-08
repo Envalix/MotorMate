@@ -104,6 +104,7 @@ export function useMe() {
 // ─── Legacy helpers (kept for remaining references) ───────────────────────────
 
 /** @deprecated session is managed by next-auth cookies */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function saveToken(_token: string) {}
 
 /** @deprecated Use signOut() directly */
